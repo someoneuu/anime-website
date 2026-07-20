@@ -38,7 +38,7 @@ export default function Home() {
 
   useEffect(() => {
     // 1. Fetch live trending anime (returns 50 items with genres)
-    fetch('http://127.0.0.1:8000/api/anime/trending')
+    fetch('https://anime-website-8k9p.onrender.com/api/anime/trending')
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setTrendingList(data);
@@ -51,7 +51,7 @@ export default function Home() {
   }, []);
 
   const fetchVault = () => {
-    fetch('http://127.0.0.1:8000/api/anime/vault')
+    fetch('https://anime-website-8k9p.onrender.com/api/anime/vault')
       .then((res) => res.json())
       .then((data) => setVaultList(data))
       .catch((err) => console.error("Error fetching vault:", err));
@@ -83,7 +83,7 @@ export default function Home() {
     setIsSearching(true);
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/anime/search?q=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(`https://anime-website-8k9p.onrender.com/api/anime/search?q=${encodeURIComponent(searchQuery)}`);
       const data = await response.json();
       if (Array.isArray(data)) {
         setSearchResults(data);
@@ -100,7 +100,7 @@ export default function Home() {
   // Add selected anime to Vault database
   const handleAddToVault = async (anime: Anime) => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/anime/vault', {
+      const response = await fetch('https://anime-website-8k9p.onrender.com/api/anime/vault', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
