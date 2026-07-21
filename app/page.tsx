@@ -325,3 +325,16 @@ export default function Home() {
     </div>
   );
 }
+useEffect(() => {
+    // 1. Fetch live trending anime (returns 50 items with genres)
+    fetch('/api/anime/trending')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setTrendingList(data);
+      })
+      .catch((err) => console.error("Error fetching trending:", err))
+      .finally(() => setIsLoadingTrending(false)); // Ensures loading stops even if it fails
+
+    // 2. Fetch user's saved vault
+    fetchVault();
+  }, []);
