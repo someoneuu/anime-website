@@ -37,14 +37,17 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // 1. Fetch live trending anime (returns 50 items with genres)
+    // 1. Fetch live trending anime safely checking response type
     fetch('/api/anime/trending')
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         if (Array.isArray(data)) setTrendingList(data);
-        setIsLoadingTrending(false);
       })
-      .catch((err) => console.error("Error fetching trending:", err));
+      .catch((err) => console.error("Error fetching trending:", err))
+      .finally(() => setIsLoadingTrending(false));
 
     // 2. Fetch user's saved vault
     fetchVault();
@@ -52,8 +55,13 @@ export default function Home() {
 
   const fetchVault = () => {
     fetch('/api/anime/vault')
-      .then((res) => res.json())
-      .then((data) => setVaultList(data))
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data)) setVaultList(data);
+      })
       .catch((err) => console.error("Error fetching vault:", err));
   };
 
@@ -84,6 +92,7 @@ export default function Home() {
 
     try {
       const response = await fetch(`/api/anime/search?q=${encodeURIComponent(searchQuery)}`);
+      if (!response.ok) throw new Error('Search failed');
       const data = await response.json();
       if (Array.isArray(data)) {
         setSearchResults(data);
@@ -92,6 +101,7 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Error searching:", error);
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
@@ -325,16 +335,3 @@ export default function Home() {
     </div>
   );
 }
-useEffect(() => {
-    // 1. Fetch live trending anime (returns 50 items with genres)
-    fetch('/api/anime/trending')
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setTrendingList(data);
-      })
-      .catch((err) => console.error("Error fetching trending:", err))
-      .finally(() => setIsLoadingTrending(false)); // Ensures loading stops even if it fails
-
-    // 2. Fetch user's saved vault
-    fetchVault();
-  }, []);

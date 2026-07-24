@@ -1,59 +1,40 @@
-from fastapi import FastAPI
-# 1. Add this brand new import at the very top 🚀
-from fastapi.middleware.cors import CORSMiddleware
-
-app = FastAPI()
-
-# 2. Paste this block directly under app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",        # Allows your local Next.js server to connect
-        "https://anihall.vercel.app"     # Allows your live Vercel site to connect
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# --- Your existing code continues below ---
-# We moved the data out here so multiple routes can use it!
-anime_db = [
-    {"id": 1, "title": "Naruto", "rating": 8.8, "episodes": 220},
-    {"id": 2, "title": "One Piece", "rating": 8.9, "episodes": 1100},
-    {"id": 3, "title": "Attack on Titan", "rating": 9.1, "episodes": 87}
-]
-# ... rest of your code ...
-import urllib.request
 import json
+import urllib.request
+import ssl
+from typing import List
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 app = FastAPI()
 
+# Enable CORS for local development and live deployment
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://anihall.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Pydantic model for adding items to the Vault
 class AnimeCreate(BaseModel):
     title: str
     rating: float
     episodes: int
-    genres: list[str] = []
+    genres: List[str] = []
 
-# Local Saved Vault
+# Local Saved Vault Database
 vault_db = [
     {"id": 1, "title": "Naruto", "rating": 8.8, "episodes": 220, "genres": ["Action", "Adventure", "Fantasy"]},
     {"id": 2, "title": "One Piece", "rating": 8.9, "episodes": 1100, "genres": ["Action", "Adventure", "Fantasy"]},
     {"id": 3, "title": "Attack on Titan", "rating": 9.1, "episodes": 87, "genres": ["Action", "Award Winning", "Drama", "Suspense"]}
 ]
 
-# Quick Local Fallback just in case of an internet failure
+# Quick Local Fallback in case of internet failure
 FALLBACK_ANIME = [
     {"title": "Frieren: Beyond Journey's End", "rating": 9.4, "episodes": 28, "genres": ["Adventure", "Drama", "Fantasy"]},
     {"title": "Fullmetal Alchemist: Brotherhood", "rating": 9.1, "episodes": 64, "genres": ["Action", "Adventure", "Drama", "Fantasy"]},
@@ -77,13 +58,17 @@ def run_anilist_query(query: str, variables: dict = None):
             "User-Agent": "Mozilla/5.0"
         }
     )
-    with urllib.request.urlopen(req, timeout=5) as response:
+    
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    with urllib.request.urlopen(req, timeout=5, context=ctx) as response:
         return json.loads(response.read().decode())
 
 # --- 1. Fetch TOP 50 Anime dynamically from AniList ---
 @app.get("/api/anime/trending")
 def get_trending_anime():
-    # GraphQL Query asking for Title, Score, Episodes, and Genres
     query = """
     query {
       Page(page: 1, perPage: 50) {
@@ -105,10 +90,7 @@ def get_trending_anime():
         
         trending_list = []
         for item in media_items:
-            # Use English title if available, otherwise fall back to Romaji (e.g. Shingeki no Kyojin)
             title = item.get("title", {}).get("english") or item.get("title", {}).get("romaji") or "Unknown Title"
-            
-            # AniList returns ratings out of 100 (e.g., 85). We divide by 10 to fit our 10-star system (e.g., 8.5)
             raw_score = item.get("averageScore")
             rating = round(raw_score / 10.0, 1) if raw_score else 0.0
             
@@ -164,7 +146,7 @@ def search_external_anime(q: str):
         print(f"⚠️ Search failed: {e}")
         return []
 
-# --- 3. Saved Vault endpoints ---
+# --- 3. Saved Vault Endpoints ---
 @app.get("/api/anime/vault")
 def get_vault_anime():
     return vault_db

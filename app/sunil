@@ -1,0 +1,13 @@
+mystack=[]
+print("initially stack is empty",mystack)
+mystack.append('x')
+mystack.append('y')
+mystack.append('z')
+print("after insert stack is")
+print(mystack)
+print("removing elements from the stack")
+print(mystack pop())
+print(mystack pop())
+print(mystack pop())
+print("after poping stack is")
+print(mystack)
